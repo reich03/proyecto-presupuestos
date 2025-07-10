@@ -1,7 +1,7 @@
 <?php
-require_once 'config/config.php';
-require_once 'includes/functions.php';
-require_once 'auth/check_session.php';
+require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/../auth/check_session.php';
 
 $current_user = getCurrentUser();
 $current_page = basename($_SERVER['PHP_SELF'], '.php');
@@ -14,7 +14,7 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $page_title ?? APP_NAME; ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://kit.fontawesome.com/your-fontawesome-kit.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
@@ -22,14 +22,12 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.tailwindcss.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.tailwindcss.min.css">
     
-    <!-- DataTables JS -->
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.tailwindcss.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
     
-    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
@@ -52,7 +50,6 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
             }
         }
         
-        /* Estilos personalizados para DataTables */
         .dataTables_wrapper {
             padding: 1rem;
         }
@@ -186,12 +183,9 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
         </div>
     </div>
     
-    <!-- Overlay para móviles -->
     <div id="sidebar-overlay" class="fixed inset-0 bg-black opacity-50 z-40 hidden md:hidden"></div>
     
-    <!-- Contenido principal -->
     <div class="md:ml-64 transition-all duration-300">
-        <!-- Header -->
         <header class="bg-white shadow-sm border-b border-gray-200">
             <div class="flex items-center justify-between px-6 py-4">
                 <div class="flex items-center">
@@ -224,7 +218,6 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
             </div>
         </header>
         
-        <!-- Contenido de la página -->
         <main class="p-6">
             <?php if (isset($_SESSION['success_message'])): ?>
                 <script>
@@ -245,7 +238,6 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
             <?php endif; ?>
 
     <script>
-        // Toggle sidebar en móviles
         document.getElementById('sidebar-toggle').addEventListener('click', function() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
@@ -254,7 +246,6 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
             overlay.classList.toggle('hidden');
         });
         
-        // Cerrar sidebar al hacer clic en el overlay
         document.getElementById('sidebar-overlay').addEventListener('click', function() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
@@ -263,7 +254,6 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
             overlay.classList.add('hidden');
         });
         
-        // Funciones SweetAlert
         function showSuccessAlert(message) {
             Swal.fire({
                 icon: 'success',
@@ -320,13 +310,11 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
             });
         }
         
-        // Inicializar DataTables mejoradas
         $(document).ready(function() {
             if ($('.datatable').length > 0) {
                 $('.datatable').each(function() {
                     const table = $(this);
                     
-                    // Solo inicializar si la tabla tiene filas de datos
                     if (table.find('tbody tr').length > 0 && !table.find('tbody tr:first td').attr('colspan')) {
                         table.DataTable({
                             responsive: true,

@@ -1,5 +1,4 @@
 <?php
-// Archivo: proyecto-presupuesto/categorias.php
 $page_title = 'Gestión de Categorías';
 require_once __DIR__ . '/includes/header.php';
 
@@ -7,13 +6,11 @@ $action = $_GET['action'] ?? 'list';
 $id = $_GET['id'] ?? null;
 $tipo = $_GET['tipo'] ?? 'padre';
 
-// Verificar permisos
 if (!hasPermission('categorias_gestionar')) {
     $_SESSION['error_message'] = 'No tienes permisos para gestionar categorías';
     redirect('dashboard.php');
 }
 
-// Procesar acciones
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? 'create';
     
@@ -281,7 +278,6 @@ $subcategorias = $db->fetchAll('
 
 <?php else: ?>
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Formulario de Subcategorías -->
         <div class="bg-white shadow-md rounded-lg p-6">
             <h2 class="text-xl font-semibold mb-4">
                 <?php echo $action === 'edit_subcategoria' ? 'Editar Subcategoría' : 'Crear Nueva Subcategoría'; ?>
@@ -340,7 +336,6 @@ $subcategorias = $db->fetchAll('
             </form>
         </div>
         
-        <!-- Lista de Subcategorías -->
         <div class="bg-white shadow-md rounded-lg p-6">
             <h2 class="text-xl font-semibold mb-4">Subcategorías</h2>
             

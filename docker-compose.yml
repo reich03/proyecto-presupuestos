@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  # Servicio de Apache + PHP
   web:
     image: php:8.2-apache
     container_name: presupuesto_web
@@ -16,17 +15,17 @@ services:
       - db
     networks:
       - presupuesto-network
+    
     command: >
       bash -c "
-      apt-get update &&
-      apt-get install -y libzip-dev zip &&
-      docker-php-ext-install mysqli pdo pdo_mysql zip &&
-      docker-php-ext-enable mysqli pdo pdo_mysql &&
-      a2enmod rewrite &&
+      apt-get update && apt-get install -y libzip-dev zip libpng-dev libjpeg-dev libfreetype6-dev && 
+      docker-php-ext-configure gd --with-freetype --with-jpeg && 
+      docker-php-ext-install mysqli pdo pdo_mysql zip gd && 
+      a2enmod rewrite && 
       apache2-foreground
       "
+    
 
-  # Servicio de MySQL
   db:
     image: mysql:8.0
     container_name: presupuesto_db
@@ -44,7 +43,7 @@ services:
       - presupuesto-network
     command: --default-authentication-plugin=mysql_native_password
 
-  # phpMyAdmin
+  
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: presupuesto_phpmyadmin

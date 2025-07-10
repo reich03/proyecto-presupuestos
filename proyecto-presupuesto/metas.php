@@ -1,5 +1,4 @@
 <?php
-// Archivo: proyecto-presupuesto/metas.php
 $page_title = 'Gestión de Metas';
 require_once __DIR__ . '/includes/header.php';
 
@@ -7,10 +6,8 @@ $user_id = $_SESSION['user_id'];
 $action = $_GET['action'] ?? 'list';
 $id = $_GET['id'] ?? null;
 
-// Obtener categorías para el formulario
 $categorias = $db->fetchAll('SELECT * FROM categorias_padre WHERE activo = 1 ORDER BY nombre');
 
-// Procesar acciones
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? 'create';
     
@@ -110,7 +107,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Obtener datos según la acción
 switch ($action) {
     case 'create':
     case 'edit':
@@ -129,7 +125,6 @@ switch ($action) {
             redirect('metas.php');
         }
         
-        // Obtener meta con cálculos manuales
         $meta = $db->fetchOne('
             SELECT m.*, cp.nombre as categoria_nombre,
                    ROUND((m.monto_actual / m.monto_objetivo) * 100, 2) as porcentaje_progreso,
@@ -144,13 +139,11 @@ switch ($action) {
             redirect('metas.php');
         }
         
-        // Obtener progreso de la meta
         $progreso = $db->fetchAll('SELECT * FROM metas_progreso WHERE meta_id = ? ORDER BY fecha DESC', [$id]);
         
         break;
         
     default:
-        // Obtener lista de metas con cálculos manuales
         $metas = $db->fetchAll('
             SELECT m.*, cp.nombre as categoria_nombre,
                    ROUND((m.monto_actual / m.monto_objetivo) * 100, 2) as porcentaje_progreso,
@@ -379,7 +372,6 @@ switch ($action) {
         </div>
     </div>
     
-    <!-- Agregar Progreso -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="bg-white shadow-md rounded-lg p-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Agregar Progreso</h3>
@@ -423,7 +415,6 @@ switch ($action) {
             </form>
         </div>
         
-        <!-- Historial de Progreso -->
         <div class="bg-white shadow-md rounded-lg p-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">Historial de Progreso</h3>
             <div class="space-y-4 max-h-96 overflow-y-auto">

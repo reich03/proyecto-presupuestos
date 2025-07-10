@@ -1,24 +1,70 @@
 <?php
+
 use Dompdf\Dompdf;
 use Dompdf\Options;
 
+
 if (isset($_POST['action']) && $_POST['action'] === 'print') {
+    
+    require_once __DIR__ . '../../vendor/autoload.php';
+
+    // Obtener los datos de los filtros del POST para mantener la consistencia
+    $tipo_reporte = $_POST['tipo'] ?? 'resumen';
+    $periodo = $_POST['periodo'] ?? 'mes_actual';
+    $fecha_inicio_filtro = $_POST['fecha_inicio'] ?? '';
+    $fecha_fin_filtro = $_POST['fecha_fin'] ?? '';
+
+    // Iniciar el buffer de salida para capturar el HTML del reporte
     ob_start();
+
+    // Incluir un archivo de estilos específico para el PDF
+    // Esto nos da control total sobre la apariencia del documento impreso
+    require_once __DIR__ . '/reporte_pdf_styles.php';
+
+    // Re-incluir la parte superior de la página (sin el menú de navegación)
+    // Asumimos que tienes un header_pdf.php o similar para un encabezado limpio
+    // Si no, puedes simplemente poner el título aquí.
+    echo "<h1>Reporte de " . htmlspecialchars(ucfirst($tipo_reporte)) . "</h1>";
+    echo "<p>Periodo: " . htmlspecialchars(str_replace('_', ' ', ucfirst($periodo))) . "</p>";
+    if ($periodo === 'personalizado') {
+        echo "<p>Desde: " . htmlspecialchars($fecha_inicio_filtro) . " Hasta: " . htmlspecialchars($fecha_fin_filtro) . "</p>";
+    }
+    echo "<hr>";
+
+
+    // Renderizar el contenido del reporte (el HTML que está más abajo)
+    // Pasamos las variables necesarias para que se genere el contenido correcto
+    // Esto es una simulación, el contenido real se captura después.
+    // La idea es que el HTML del reporte se genere aquí.
+    // Por simplicidad, capturaremos el HTML generado por la página y lo limpiaremos.
+
+    // El contenido del reporte se genera más abajo y se captura con ob_get_clean()
 }
+// --- FIN: Lógica para generar PDF ---
+
 
 $page_title = 'Reportes y Análisis';
 require_once __DIR__ . '/includes/header.php';
 
-$is_printing = isset($_POST['action']) && $_POST['action'] === 'print';
-$user_id = $_SESSION['user_id'];
+// Si la acción no es imprimir, usa los parámetros GET como antes
+if (!isset($_POST['action']) || $_POST['action'] !== 'print') {
+    $user_id = $_SESSION['user_id'];
+    $tipo_reporte = $_GET['tipo'] ?? 'resumen';
+    $periodo = $_GET['periodo'] ?? 'mes_actual';
+} else {
+    // Si es para imprimir, usa los datos que ya obtuvimos del POST
+    $user_id = $_SESSION['user_id'];
+}
 
-$tipo_reporte = $_POST['tipo'] ?? $_GET['tipo'] ?? 'resumen';
-$periodo = $_POST['periodo'] ?? $_GET['periodo'] ?? 'mes_actual';
+
+// Definir rangos de fechas según el período seleccionado
+$fecha_inicio = '';
+$fecha_fin = '';
+
+// Usar las fechas del filtro si vienen del POST (para el PDF) o del GET
 $fecha_inicio_source = $_POST['fecha_inicio'] ?? $_GET['fecha_inicio'] ?? null;
 $fecha_fin_source = $_POST['fecha_fin'] ?? $_GET['fecha_fin'] ?? null;
 
-$fecha_inicio = '';
-$fecha_fin = '';
 
 switch ($periodo) {
     case 'mes_actual':
@@ -49,9 +95,12 @@ switch ($periodo) {
         break;
 }
 
+// Obtener datos según el tipo de reporte
 $datos_reporte = [];
 
+// Resumen General
 if ($tipo_reporte === 'resumen') {
+    // Resumen financiero
     $sql_resumen = "SELECT 
         SUM(CASE WHEN pi.tipo = 'ingreso' THEN t.monto ELSE 0 END) as total_ingresos,
         SUM(CASE WHEN pi.tipo = 'egreso' THEN t.monto ELSE 0 END) as total_egresos,
@@ -64,6 +113,7 @@ if ($tipo_reporte === 'resumen') {
     
     $resumen = $db->fetchOne($sql_resumen, [$user_id, $fecha_inicio, $fecha_fin]);
     
+    // Ingresos por categoría
     $sql_ingresos_categoria = "SELECT 
         cp.nombre as categoria,
         SUM(t.monto) as total
@@ -78,6 +128,7 @@ if ($tipo_reporte === 'resumen') {
     
     $ingresos_categoria = $db->fetchAll($sql_ingresos_categoria, [$user_id, $fecha_inicio, $fecha_fin]);
     
+    // Gastos por categoría
     $sql_gastos_categoria = "SELECT 
         cp.nombre as categoria,
         SUM(t.monto) as total
@@ -92,6 +143,7 @@ if ($tipo_reporte === 'resumen') {
     
     $gastos_categoria = $db->fetchAll($sql_gastos_categoria, [$user_id, $fecha_inicio, $fecha_fin]);
     
+    // Evolución mensual
     $sql_evolucion = "SELECT 
         DATE_FORMAT(t.fecha, '%Y-%m') as mes,
         SUM(CASE WHEN pi.tipo = 'ingreso' THEN t.monto ELSE 0 END) as ingresos,
@@ -112,6 +164,8 @@ if ($tipo_reporte === 'resumen') {
         'evolucion_mensual' => $evolucion_mensual
     ];
 }
+
+// Reporte de Presupuestos
 elseif ($tipo_reporte === 'presupuestos') {
     $sql_presupuestos = "SELECT 
         p.nombre, p.fecha_inicio, p.fecha_fin,
@@ -129,6 +183,8 @@ elseif ($tipo_reporte === 'presupuestos') {
     
     $datos_reporte = ['presupuestos' => $presupuestos];
 }
+
+// Reporte de Metas
 elseif ($tipo_reporte === 'metas') {
     $sql_metas = "SELECT 
         m.nombre, m.monto_objetivo, m.monto_actual, m.fecha_objetivo, m.completado,
@@ -156,6 +212,8 @@ elseif ($tipo_reporte === 'metas') {
     
     $datos_reporte = ['metas' => $metas, 'metas_categoria' => $metas_categoria];
 }
+
+// Análisis Detallado
 elseif ($tipo_reporte === 'analisis') {
     $sql_tendencias = "SELECT 
         DATE_FORMAT(t.fecha, '%Y-%m') as mes, cp.nombre as categoria, cp.tipo, SUM(t.monto) as total
@@ -198,7 +256,9 @@ function generarColores($cantidad) {
     <h1 class="text-2xl font-bold text-gray-900 mb-4">Reportes y Análisis</h1>
     
     <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <!-- El formulario ahora usará POST para enviar los datos de los gráficos -->
         <form method="POST" id="reportForm" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+            <!-- Campos ocultos para enviar imágenes de gráficos como Base64 -->
             <input type="hidden" name="ingresosCategoriaChart" id="ingresosCategoriaChart">
             <input type="hidden" name="gastosCategoriaChart" id="gastosCategoriaChart">
             <input type="hidden" name="evolucionMensualChart" id="evolucionMensualChart">
@@ -252,6 +312,7 @@ function generarColores($cantidad) {
     </div>
 </div>
 
+<!-- Contenedor para el contenido del reporte -->
 <div id="report-content">
     <?php if ($tipo_reporte === 'resumen'): ?>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -362,6 +423,7 @@ function generarColores($cantidad) {
 </div>
 
 <script>
+// Almacenar instancias de gráficos para poder destruirlas y volver a crearlas
 window.myCharts = {};
 
 function destroyCharts() {
@@ -370,7 +432,7 @@ function destroyCharts() {
 }
 
 function renderCharts() {
-    destroyCharts();
+    destroyCharts(); // Limpiar gráficos anteriores
 
     <?php if ($tipo_reporte === 'resumen'): ?>
         const ingresosData = <?php echo json_encode($datos_reporte['ingresos_categoria']); ?>;
@@ -447,27 +509,32 @@ function toggleCustomDates() {
 
 function generateReport() {
     const form = document.getElementById('reportForm');
-    form.action = 'reportes.php';
-    form.method = 'GET';
+    form.action = 'reportes.php'; // Asegurarse que la acción sea la página actual
+    form.method = 'GET'; // Usar GET para generar el reporte en la página
+    // Limpiar los campos de gráficos para no enviar data innecesaria
     document.querySelectorAll('input[type=hidden]').forEach(input => input.value = '');
     form.submit();
 }
 
 function printReport() {
+    // Asegurarse que todos los gráficos hayan terminado de renderizarse y guardado su imagen
     setTimeout(() => {
         const form = document.getElementById('reportForm');
-        form.action = 'reportes.php'; 
-        form.method = 'POST';
+        form.action = 'reportes.php'; // La acción sigue siendo la misma página
+        form.method = 'POST'; // Usar POST para enviar los datos de los gráficos
+        // Añadir un campo para identificar la acción de imprimir
         let actionInput = document.createElement('input');
         actionInput.type = 'hidden';
         actionInput.name = 'action';
         actionInput.value = 'print';
         form.appendChild(actionInput);
         form.submit();
+        // Remover el input después de enviar para no interferir con "Generar Reporte"
         form.removeChild(actionInput);
-    }, 500); 
+    }, 500); // Un pequeño delay para dar tiempo a los gráficos a renderizarse
 }
 
+// Renderizar los gráficos cuando la página carga
 document.addEventListener('DOMContentLoaded', function() {
     renderCharts();
     toggleCustomDates();
@@ -475,17 +542,35 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <?php
+// --- INICIO: Procesamiento final para PDF ---
 if (isset($_POST['action']) && $_POST['action'] === 'print') {
     
-    require_once __DIR__ . '/vendor/autoload.php';
-
+    // Capturar el HTML generado del reporte
     $report_html = ob_get_clean();
 
+    // Crear el HTML final para el PDF
+    $pdf_html = '<html><head><title>Reporte</title>';
+    $pdf_html .= '<style>' . file_get_contents(__DIR__ . '/includes/reporte_pdf_styles.php') . '</style>';
+    $pdf_html .= '</head><body>';
+    
+    // Añadir el título y período
+    $pdf_html .= "<h1>Reporte de " . htmlspecialchars(ucfirst($tipo_reporte)) . "</h1>";
+    $pdf_html .= "<p>Periodo: " . htmlspecialchars(str_replace('_', ' ', ucfirst($periodo))) . "</p>";
+    if ($periodo === 'personalizado') {
+        $pdf_html .= "<p>Desde: " . htmlspecialchars($fecha_inicio) . " Hasta: " . htmlspecialchars($fecha_fin) . "</p>";
+    }
+    $pdf_html .= "<hr>";
+
+    // Reemplazar los canvas de los gráficos con las imágenes Base64 enviadas
+    $report_content_html = file_get_contents(__DIR__ . '/reportes.php'); // Cargar el contenido de nuevo para procesarlo
+    
+    // Extraer solo el div#report-content
     $doc = new DOMDocument();
-    @$doc->loadHTML('<?xml encoding="utf-8" ?>' . $report_html);
+    @$doc->loadHTML($report_html);
     $contentNode = $doc->getElementById('report-content');
     $content_html = $doc->saveHTML($contentNode);
 
+    // Reemplazar canvas con imágenes
     if (!empty($_POST['ingresosCategoriaChart'])) {
         $content_html = preg_replace('/<div class="h-80"><canvas id="ingresosCategoria"><\/canvas><\/div>/', '<img src="' . $_POST['ingresosCategoriaChart'] . '" class="chart-img">', $content_html);
     }
@@ -499,30 +584,23 @@ if (isset($_POST['action']) && $_POST['action'] === 'print') {
         $content_html = preg_replace('/<div class="h-80"><canvas id="metasCategoria"><\/canvas><\/div>/', '<img src="' . $_POST['metasCategoriaChart'] . '" class="chart-img">', $content_html);
     }
 
-    $pdf_html = '<html><head><title>Reporte</title>';
-    $pdf_html .= '<style>' . file_get_contents(__DIR__ . '/includes/reporte_pdf_styles.php') . '</style>';
-    $pdf_html .= '</head><body>';
-    $pdf_html .= "<h1>Reporte de " . htmlspecialchars(ucfirst($tipo_reporte)) . "</h1>";
-    $pdf_html .= "<p>Periodo: " . htmlspecialchars(str_replace('_', ' ', ucfirst($periodo))) . "</p>";
-    if ($periodo === 'personalizado') {
-        $pdf_html .= "<p>Desde: " . htmlspecialchars($fecha_inicio) . " Hasta: " . htmlspecialchars($fecha_fin) . "</p>";
-    }
-    $pdf_html .= "<hr>";
     $pdf_html .= $content_html;
     $pdf_html .= '</body></html>';
 
+    // Configurar dompdf
     $options = new Options();
-    $options->set('isRemoteEnabled', true);
+    $options->set('isRemoteEnabled', true); // Permitir cargar imágenes remotas si las hubiera
     $options->set('defaultFont', 'Helvetica');
 
     $dompdf = new Dompdf($options);
     $dompdf->loadHtml($pdf_html);
-    $dompdf->setPaper('A4', 'portrait');
+    $dompdf->setPaper('A4', 'portrait'); // Tamaño de papel y orientación
     $dompdf->render();
 
-    $dompdf->stream("reporte-" . $tipo_reporte . "-" . date("Y-m-d") . ".pdf", ["Attachment" => 0]);
+    // Enviar el PDF al navegador
+    $dompdf->stream("reporte-" . $tipo_reporte . "-" . date("Y-m-d") . ".pdf", ["Attachment" => 0]); // 0 para previsualizar, 1 para descargar
     
-    exit();
+    exit(); // Detener la ejecución del script
 }
 
 require_once __DIR__ . '/includes/footer.php';

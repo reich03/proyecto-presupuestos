@@ -1,18 +1,15 @@
 <?php
-// Archivo: proyecto-presupuesto/roles.php
 $page_title = 'Gestión de Roles';
 require_once __DIR__ . '/includes/header.php';
 
 $action = $_GET['action'] ?? 'list';
 $id = $_GET['id'] ?? null;
 
-// Verificar permisos de administrador
 if (!hasPermission('roles_gestionar')) {
     $_SESSION['error_message'] = 'No tienes permisos para gestionar roles';
     redirect('dashboard.php');
 }
 
-// Definir permisos disponibles
 $permisos_disponibles = [
     'usuarios_crear' => 'Crear usuarios',
     'usuarios_editar' => 'Editar usuarios',
@@ -26,7 +23,6 @@ $permisos_disponibles = [
     'reportes_globales' => 'Ver reportes globales'
 ];
 
-// Procesar acciones
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? 'create';
     
@@ -39,7 +35,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (empty($nombre)) {
                 $_SESSION['error_message'] = 'El nombre del rol es requerido';
             } else {
-                // Verificar si el rol ya existe
                 $existing_role = $db->fetchOne('SELECT id FROM roles WHERE nombre = ?', [$nombre]);
                 
                 if ($existing_role) {
@@ -71,7 +66,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (empty($nombre)) {
                 $_SESSION['error_message'] = 'El nombre del rol es requerido';
             } else {
-                // Verificar si el rol ya existe (excepto el actual)
                 $existing_role = $db->fetchOne('SELECT id FROM roles WHERE nombre = ? AND id != ?', [$nombre, $id]);
                 
                 if ($existing_role) {
@@ -98,7 +92,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id = $_POST['id'];
             $activo = $_POST['activo'] === '1' ? 0 : 1;
             
-            // No permitir desactivar el rol Admin
             if ($id == 1) {
                 $_SESSION['error_message'] = 'No se puede desactivar el rol de Administrador';
             } else {
@@ -114,7 +107,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Obtener datos según la acción
 switch ($action) {
     case 'create':
     case 'edit':
@@ -129,7 +121,6 @@ switch ($action) {
         break;
         
     default:
-        // Obtener lista de roles con conteo de usuarios
         $roles = $db->fetchAll('
             SELECT r.*, COUNT(u.id) as usuarios_count
             FROM roles r

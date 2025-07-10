@@ -1,32 +1,22 @@
-
 <?php
 require_once __DIR__ . '/../config/database.php';
 
-/**
- * Funciones generales de la aplicación
- */
-
-// Función para sanitizar entradas
 function sanitizeInput($data) {
     return htmlspecialchars(strip_tags(trim($data)));
 }
 
-// Función para validar email
 function validateEmail($email) {
     return filter_var($email, FILTER_VALIDATE_EMAIL);
 }
 
-// Función para hashear contraseñas
 function hashPassword($password) {
     return password_hash($password, PASSWORD_DEFAULT);
 }
 
-// Función para verificar contraseñas
 function verifyPassword($password, $hash) {
     return password_verify($password, $hash);
 }
 
-// Función para generar tokens CSRF
 function generateCSRFToken() {
     if (!isset($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
@@ -34,43 +24,42 @@ function generateCSRFToken() {
     return $_SESSION['csrf_token'];
 }
 
-// Función para verificar tokens CSRF
 function verifyCSRFToken($token) {
     return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
 }
 
-// Función para redireccionar
 function redirect($url) {
-    // Verificar si no se han enviado headers
     if (!headers_sent()) {
         header("Location: " . $url);
         exit();
     } else {
-        // Si ya se enviaron headers, usar JavaScript
         echo "<script>window.location.href = '" . $url . "';</script>";
         exit();
     }
 }
 
-// Función para verificar si el usuario está logueado
 function isLoggedIn() {
     return isset($_SESSION['user_id']) && isset($_SESSION['user_role']);
 }
 
-// Función para verificar roles
 function hasRole($role) {
     return isset($_SESSION['user_role']) && $_SESSION['user_role'] === $role;
 }
 
-// Función para verificar permisos
+
+
 function hasPermission($permission) {
-    if (!isLoggedIn()) return false;
+    if (!isLoggedIn()) {
+        return false;
+    }
     
-    $permissions = json_decode($_SESSION['user_permissions'] ?? '[]', true);
+    $permissions = $_SESSION['user_permissions'] ?? [];
+    
     return in_array($permission, $permissions);
 }
+// ====================================================================
 
-// Función para obtener el usuario actual
+
 function getCurrentUser() {
     if (!isLoggedIn()) return null;
     
@@ -83,28 +72,24 @@ function getCurrentUser() {
     return $db->fetchOne($sql, [$_SESSION['user_id']]);
 }
 
-// Función para formatear moneda
 function formatCurrency($amount) {
-    return '$' . number_format($amount, 2, ',', '.');
+    return '$ ' . number_format($amount, 0, ',', '.');
 }
 
-// Función para formatear fechas
 function formatDate($date) {
     return date('d/m/Y', strtotime($date));
 }
 
-// Función para formatear fechas con hora
+
 function formatDateTime($datetime) {
     return date('d/m/Y H:i', strtotime($datetime));
 }
 
-// Función para calcular porcentaje
 function calculatePercentage($current, $total) {
     if ($total == 0) return 0;
     return round(($current / $total) * 100, 2);
 }
 
-// Función para mostrar alertas
 function showAlert($message, $type = 'info') {
     $alertClass = '';
     $iconClass = '';
@@ -135,11 +120,9 @@ function showAlert($message, $type = 'info') {
           </div>";
 }
 
-// Función para log de actividades
 function logActivity($user_id, $action, $description) {
     global $db;
     
-    // Verificar si la tabla existe antes de insertar
     try {
         $sql = "INSERT INTO activity_log (user_id, action, description, ip_address, user_agent) 
                 VALUES (?, ?, ?, ?, ?)";
@@ -154,13 +137,10 @@ function logActivity($user_id, $action, $description) {
         
         $db->query($sql, $params);
     } catch (Exception $e) {
-        // Si la tabla no existe, simplemente no hacer nada
-        // En producción podrías loggear esto a un archivo
         error_log("Error logging activity: " . $e->getMessage());
     }
 }
 
-// Función para obtener configuración
 function getConfig($key, $default = null) {
     global $db;
     
@@ -174,7 +154,6 @@ function getConfig($key, $default = null) {
     }
 }
 
-// Función para paginación
 function paginate($totalItems, $itemsPerPage, $currentPage) {
     $totalPages = ceil($totalItems / $itemsPerPage);
     $currentPage = max(1, min($currentPage, $totalPages));
@@ -193,13 +172,11 @@ function paginate($totalItems, $itemsPerPage, $currentPage) {
     ];
 }
 
-// Función para validar fechas
 function validateDate($date, $format = 'Y-m-d') {
     $d = DateTime::createFromFormat($format, $date);
     return $d && $d->format($format) === $date;
 }
 
-// Función para generar colores aleatorios para gráficos
 function generateRandomColors($count) {
     $colors = [];
     for ($i = 0; $i < $count; $i++) {
@@ -208,7 +185,6 @@ function generateRandomColors($count) {
     return $colors;
 }
 
-// Función para obtener el mes en español
 function getMonthName($month) {
     $months = [
         1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
@@ -218,7 +194,6 @@ function getMonthName($month) {
     return $months[$month] ?? '';
 }
 
-// Función para obtener el día de la semana en español
 function getDayName($day) {
     $days = [
         0 => 'Domingo', 1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles',
@@ -227,7 +202,6 @@ function getDayName($day) {
     return $days[$day] ?? '';
 }
 
-// Función para debug (solo en desarrollo)
 function debug($data) {
     if ($_SERVER['HTTP_HOST'] === 'localhost') {
         echo "<pre>";
@@ -235,3 +209,4 @@ function debug($data) {
         echo "</pre>";
     }
 }
+

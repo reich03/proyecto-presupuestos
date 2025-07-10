@@ -40,12 +40,10 @@
             }
         }
         
-        // Función para confirmar eliminación
         function confirmDelete(message = '¿Está seguro que desea eliminar este elemento?') {
             return confirm(message);
         }
         
-        // Función para formatear moneda
         function formatCurrency(amount) {
             return new Intl.NumberFormat('es-CO', {
                 style: 'currency',
@@ -53,12 +51,10 @@
             }).format(amount);
         }
         
-        // Función para formatear fecha
         function formatDate(date) {
             return new Date(date).toLocaleDateString('es-CO');
         }
         
-        // Inicializar DataTables por defecto
         $(document).ready(function() {
             $('.datatable').DataTable({
                 language: {
